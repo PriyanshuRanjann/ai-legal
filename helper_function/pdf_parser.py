@@ -47,15 +47,22 @@ def _normalize_text(raw_text: str | None) -> str:
     text = " ".join(part for part in text.split() if part)
     return text.strip()
 
-if __name__ == "__main__":
-    # Example usage
-    pdf_pages = parse_pdf(r"input/the-state-of-ai-how-organizations-are-rewiring-to-capture-value_final.pdf")
-    for page in pdf_pages:
-        print(f"Page {page.page_number}: {page.char_count} characters")
-        #saving in json in output directory
-        import json
-        output_dir = Path("output")
-        output_dir.mkdir(exist_ok=True)
+
+import json
+
+def save_pdf_pages_to_json(pdf_path: str | Path, output_dir: str | Path = "output") -> None:
+    """Parse PDF and save each page as a JSON file in output_dir."""
+    pages = parse_pdf(pdf_path)
+    output_dir = Path(output_dir)
+    output_dir.mkdir(exist_ok=True)
+    for page in pages:
         output_path = output_dir / f"{page.document_id}_page_{page.page_number}.json"
         with output_path.open("w", encoding="utf-8") as f:
             json.dump(page.dict(), f, ensure_ascii=False, indent=4)
+        print(f"Saved page {page.page_number} ({page.char_count} chars) to {output_path}")
+
+
+if __name__ == "__main__":
+    # Single function call: input PDF, output JSONs
+    input = r"input/the-state-of-ai-how-organizations-are-rewiring-to-capture-value_final.pdf"
+    save_pdf_pages_to_json(input)
