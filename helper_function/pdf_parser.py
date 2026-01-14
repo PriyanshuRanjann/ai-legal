@@ -58,7 +58,7 @@ def save_pdf_pages_to_json(pdf_path: str | Path, output_dir: str | Path = "outpu
     for page in pages:
         output_path = output_dir / f"{page.document_id}_page_{page.page_number}.json"
         with output_path.open("w", encoding="utf-8") as f:
-            json.dump(page.dict(), f, ensure_ascii=False, indent=4)
+            json.dump(page.model_dump(), f, ensure_ascii=False, indent=4)
         print(f"Saved page {page.page_number} ({page.char_count} chars) to {output_path}")
 
 
