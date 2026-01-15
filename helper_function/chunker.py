@@ -14,11 +14,20 @@ def read_parsed_json(path,input):
         if not os.path.exists(path):
             save_pdf_pages_to_json(input)
         with open(path, 'r', encoding='utf-8') as f:
-            print("Successfully read the parsed JSON file.")
             return json.load(f)
     except Exception as e:
         print(f"Failed to read: {path}: {e}")
         return None
+
+def write_parsed_json(path, data):
+    """Write data to a JSON file."""
+    try:
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"Failed to write: {path}: {e}")
+
+    
 
 # if __name__ == "__main__":
 #     input = r"input/the-state-of-ai-how-organizations-are-rewiring-to-capture-value_final.pdf"
