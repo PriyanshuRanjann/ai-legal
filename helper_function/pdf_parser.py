@@ -55,7 +55,7 @@ def save_pdf_pages_to_json(
     """Parse PDF and save each page as a JSON file in output_dir."""
     pages = parse_pdf(pdf_path)
     output_dir = Path(output_dir)
-    output_dir.mkdir(exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
     for page in pages:
         output_path = output_dir / f"{page.document_id}_page_{page.page_number}.json"
         with output_path.open("w", encoding="utf-8") as f:
