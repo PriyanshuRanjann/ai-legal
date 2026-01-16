@@ -69,3 +69,4 @@ if __name__ == "__main__":
     # Single function call: input PDF, output JSONs
     input = r"input/the-state-of-ai-how-organizations-are-rewiring-to-capture-value_final.pdf"
     save_pdf_pages_to_json(input)
+    
