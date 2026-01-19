@@ -154,9 +154,8 @@ def process_chunks_for_embedding(input):
         return []
     try:
         embeddings = generate_embeddings(texts, model)
-        if not embeddings:
+        if embeddings is None or len(embeddings) == 0:
             return []
-        
         records = build_embedding_records(chunks, embeddings)
         return records
     except Exception as e:
