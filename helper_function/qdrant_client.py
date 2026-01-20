@@ -11,3 +11,22 @@ def initialize_qdrant_client(host: str = "localhost", port: int = 6333) -> Qdran
     except Exception as e:
         print(f"[ERROR] Failed to connect to Qdrant: {e}")
         return None
+
+def create_qdrant_collection(
+    client: QdrantClient,
+    collection_name,
+    vector_size,
+    distance: models.Distance = models.Distance.COSINE
+) -> None:
+    """Creates a Qdrant collection with the specified parameters."""
+    try:
+        client.recreate_collection(
+            collection_name=collection_name,
+            vectors_config=models.VectorParams(
+                size=vector_size,
+                distance=distance
+            )
+        )
+        print(f"[INFO] Created Qdrant collection: {collection_name}")
+    except Exception as e:
+        print(f"[ERROR] Failed to create collection {collection_name}: {e}")
