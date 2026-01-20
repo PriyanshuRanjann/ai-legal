@@ -75,7 +75,7 @@ def index_chunks_to_qdrant(
     qdrant_port: int = 6333,
     collection_name: str = "AI_Collection"
 ) -> None:
-    """Full pipeline: process chunks, generate embeddings, and index into Qdrant."""
+    """Full pipeline: generate embeddings, and index into Qdrant."""
     try:
         client = initialize_qdrant_client(host=qdrant_host, port=qdrant_port)
         if not client:
