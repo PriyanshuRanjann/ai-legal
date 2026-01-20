@@ -1,5 +1,6 @@
+import uuid
 from qdrant_client import QdrantClient
-from qdrant_client.models import PointStruct , VectorParams, Distance
+from qdrant_client.models import PointStruct, VectorParams, Distance
 from helper_function.embeddings import process_chunks_for_embedding
 
 def initialize_qdrant_client(host: str = "localhost", port: int = 6333) -> QdrantClient:
@@ -29,16 +30,20 @@ def create_qdrant_collection(
         )
         print(f"[INFO] Created Qdrant collection: {collection_name}")
     except Exception as e:
-        print(f"[ERROR] Failed to create collection {collection_name}: {e}")
-
+        if "already exists" in str(e):
+            print(f"[INFO] Collection {collection_name} already exists.")
+        else:
+            print(f"[ERROR] Failed to create collection {collection_name}: {e}")
 
 def format_points(records: list) -> list:
-    """Converts embedding records into Qdrant PointStruct format."""
+    """Converts embedding records into Qdrant PointStruct format with UUIDs as IDs."""
     points = []
     try:
         for record in records:
+            # Convert string chunk_id to UUID5 (deterministic for same input)
+            point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(record["id"])))
             point = PointStruct(
-                id=record["id"],
+                id=point_id,
                 vector=record["vector"],
                 payload=record["payload"]
             )
@@ -63,7 +68,6 @@ def upsert_points(
         print(f"[INFO] Upserted {len(points)} points into collection {collection_name}.")
     except Exception as e:
         print(f"[ERROR] Failed to upsert points into {collection_name}: {e}")
-
 
 def index_chunks_to_qdrant(
     input,
@@ -96,5 +100,5 @@ def index_chunks_to_qdrant(
 
 if __name__ == "__main__":
     input = r"input/the-state-of-ai-how-organizations-are-rewiring-to-capture-value_final.pdf"
-    print(index_chunks_to_qdrant(input))
+    index_chunks_to_qdrant(input)
     print("Indexing to Qdrant completed.")
