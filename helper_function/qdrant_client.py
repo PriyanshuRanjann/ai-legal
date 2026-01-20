@@ -1,4 +1,3 @@
-"""import qdrant_client module."""
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from helper_function.embeddings import build_embedding_records
