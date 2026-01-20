@@ -4,10 +4,10 @@ from qdrant_client import QdrantClient
 from config import OLLAMA_URL, OLLAMA_MODEL
 from sentence_transformers import SentenceTransformer
 
-def search_qdrant(input_path, client: QdrantClient, collection_name: str, top_k: int = 5):
+def search_qdrant(input_path, query, client, collection_name, top_k=5):
     """Search Qdrant for top_k relevant chunks using a query vector."""
     try:
-        model = SentenceTransformer("all-MiniLM-L6-v2")
+        model = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
         query_vector = model.encode(query).tolist()
         index_chunks_to_qdrant(input_path,collection_name)
         results = client.query_points(
@@ -25,11 +25,15 @@ def search_qdrant(input_path, client: QdrantClient, collection_name: str, top_k:
 def build_context(results):
     """Concatenate retrieved chunk texts for context."""
     try:
-        res = "\n\n".join([point.payload.get("text", "") for point in results])
-        return res
+        texts = []
+        for point in results:
+            if hasattr(point, "payload") and point.payload:
+                texts.append(point.payload.get("text", ""))
+        return "\n\n".join(texts)
     except Exception as e:
         print(f"[ERROR] Failed to build context from results: {e}")
         return ""
+
     
 def ollama_rag(input_path, query, collection_name, top_k=5, qdrant_host="localhost", qdrant_port=6333):
     """
@@ -38,7 +42,7 @@ def ollama_rag(input_path, query, collection_name, top_k=5, qdrant_host="localho
     """
     
     client = initialize_qdrant_client(host=qdrant_host, port=qdrant_port)
-    results = search_qdrant(input_path, client, collection_name, top_k)
+    results = search_qdrant(input_path, query, client, collection_name, top_k)
     context = build_context(results)
     prompt = f"""
         ROLE: You are a legal assistant AI specialized in retrieving and citing legal document passages.
@@ -64,10 +68,12 @@ def ollama_rag(input_path, query, collection_name, top_k=5, qdrant_host="localho
     payload = {
         "model": OLLAMA_MODEL,
         "prompt": prompt,
-        "stream": True
+        "stream": False
     }
-    response = requests.post(OLLAMA_URL, json=payload)
+
+    response = requests.post(OLLAMA_URL, json=payload, timeout=120)
     response.raise_for_status()
+
     answer = response.json().get("response", "")
     return answer
 
