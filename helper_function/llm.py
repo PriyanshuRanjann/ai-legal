@@ -2,14 +2,20 @@ import requests
 from helper_function.qdrant_client import initialize_qdrant_client, index_chunks_to_qdrant
 from qdrant_client import QdrantClient
 from config import OLLAMA_URL, OLLAMA_MODEL
+from sentence_transformers import SentenceTransformer
 
-def search_qdrant(client: QdrantClient, collection_name: str, query_vector: list, top_k: int = 5):
+def search_qdrant(input, client: QdrantClient, collection_name: str, top_k: int = 5):
     """Search Qdrant for top_k relevant chunks using a query vector."""
     try:
-        results = client.search(
+        model = SentenceTransformer("all-MiniLM-L6-v2")
+        query_vector = model.encode(query).tolist()
+        index_chunks_to_qdrant(input,collection_name)
+        results = client.query_points(
             collection_name=collection_name,
             query_vector=query_vector,
-            limit=top_k
+            limit=top_k,
+            with_payload=True,
+            with_vectors=False
         )
         return results
     except Exception as e:
@@ -25,18 +31,18 @@ def build_context(results):
         print(f"[ERROR] Failed to build context from results: {e}")
         return ""
     
-def ollama_rag(input, query, query_vector, collection_name, top_k=5, qdrant_host="localhost", qdrant_port=6333):
+def ollama_rag(input, query, collection_name, top_k=5, qdrant_host="localhost", qdrant_port=6333):
     """
     RAG pipeline: search Qdrant for context using query_vector, send context+query to Ollama, return answer.
     query_vector: embedding of the user query (should be generated externally)
     """
-    index_chunks_to_qdrant(input,collection_name,qdrant_host,qdrant_port)
+    
     client = initialize_qdrant_client(host=qdrant_host, port=qdrant_port)
-    results = search_qdrant(client, collection_name, query_vector, top_k)
+    results = search_qdrant(input, client, collection_name, top_k)
     context = build_context(results)
     prompt = f"""
         ROLE: You are a legal assistant AI specialized in retrieving and citing legal document passages.
-
+        CONTEXT: {context}
         TASK: 
         - Answer the user's query using the provided context passages.
         - Return relevant passages with:
@@ -58,7 +64,7 @@ def ollama_rag(input, query, query_vector, collection_name, top_k=5, qdrant_host
     payload = {
         "model": OLLAMA_MODEL,
         "prompt": prompt,
-        "stream": False
+        "stream": True
     }
     response = requests.post(OLLAMA_URL, json=payload)
     response.raise_for_status()
@@ -68,10 +74,10 @@ def ollama_rag(input, query, query_vector, collection_name, top_k=5, qdrant_host
 if __name__ == "__main__":
     # Example usage
     input = r"input/the-state-of-ai-how-organizations-are-rewiring-to-capture-value_final.pdf"
-    query = "What are the key deadlines mentioned in the document?"
+    query = input("Enter your legal query: ")
     # Example query vector (should be generated using the same embedding model as used for indexing)
-    query_vector = [0.01] * 768  # Placeholder vector; replace with actual embedding
-    collection_name = "legal_example"
-    answer = ollama_rag(input, query, query_vector, collection_name)
+    # query_vector = [0.01] * 768  # Placeholder vector; replace with actual embedding
+    collection_name = "legal_example1"
+    answer = ollama_rag(input, query, collection_name)
     print("Answer from Ollama RAG:")
     print(answer)
