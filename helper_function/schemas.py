@@ -14,3 +14,13 @@ class PDFPageSchema(BaseModel):
             return value
         return len(values.get("text", ""))
 
+
+class ContextEnrichedChunk(BaseModel):
+    document_id: str
+    page_number: int
+    source_path: str
+    chunk_id: str
+    text: str
+    context_prev: str
+    context_next: str
+    char_count: int
