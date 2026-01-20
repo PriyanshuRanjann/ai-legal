@@ -4,11 +4,11 @@ from sentence_transformers import SentenceTransformer
 from helper_function.chunker import process_parsed_pdfs_with_context_chunking
 
 
-def load_json_chunks(input,directory_path: str = "output/chunks"):
+def load_json_chunks(input_path,directory_path: str = "output/chunks"):
     """Reads all JSON files from input/chunks and returns a list of chunk dictionaries."""
     try:
         if not os.path.exists(directory_path):
-            process_parsed_pdfs_with_context_chunking(input)
+            process_parsed_pdfs_with_context_chunking(input_path)
     except Exception as e:
         print(f"[ERROR] Failed to process parsed PDFs: {e}")
     try:
@@ -126,10 +126,10 @@ def build_embedding_records(chunks: list, embeddings: list) -> list:
         return []
 
 
-def process_chunks_for_embedding(input):
+def process_chunks_for_embedding(input_path):
     """Full pipeline: load → clean → embed → prepare records."""
     try:
-        chunks = load_json_chunks(input)
+        chunks = load_json_chunks(input_path)
         if not chunks:
             print("[ERROR] No chunks loaded.")
             return []
@@ -164,7 +164,7 @@ def process_chunks_for_embedding(input):
 
 if __name__ == "__main__":
     # Example usage
-    input = r"input/the-state-of-ai-how-organizations-are-rewiring-to-capture-value_final.pdf"
-    embedding_records = process_chunks_for_embedding(input)
+    input_path = r"input/the-state-of-ai-how-organizations-are-rewiring-to-capture-value_final.pdf"
+    embedding_records = process_chunks_for_embedding(input_path)
     print(f"Prepared {len(embedding_records)} records for embedding storage.")
     
