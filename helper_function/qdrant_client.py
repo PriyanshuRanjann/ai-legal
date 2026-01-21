@@ -15,7 +15,7 @@ def initialize_qdrant_client(host: str = "localhost", port: int = 6333) -> Qdran
 
 def create_qdrant_collection(
     client: QdrantClient,
-    collection_name = "AI_Collection",
+    collection_name : str,
     vector_size = 768,
     distance = Distance.COSINE
 ) -> None:
@@ -69,12 +69,7 @@ def upsert_points(
     except Exception as e:
         print(f"[ERROR] Failed to upsert points into {collection_name}: {e}")
 
-def index_chunks_to_qdrant(
-    input,
-    qdrant_host: str = "localhost",
-    qdrant_port: int = 6333,
-    collection_name: str = "AI_Collection"
-) -> None:
+def index_chunks_to_qdrant(input_path,collection_name: str,qdrant_host: str = "localhost",qdrant_port: int = 6333) -> None:
     """Full pipeline: generate embeddings, and index into Qdrant."""
     try:
         client = initialize_qdrant_client(host=qdrant_host, port=qdrant_port)
@@ -83,7 +78,7 @@ def index_chunks_to_qdrant(
 
         create_qdrant_collection(client, collection_name)
 
-        records = process_chunks_for_embedding(input)
+        records = process_chunks_for_embedding(input_path)
         if not records:
             print("[ERROR] No embedding records to index.")
             return
@@ -99,6 +94,8 @@ def index_chunks_to_qdrant(
         print(f"[ERROR] Exception during indexing to Qdrant: {e}")
 
 if __name__ == "__main__":
-    input = r"input/the-state-of-ai-how-organizations-are-rewiring-to-capture-value_final.pdf"
-    index_chunks_to_qdrant(input)
+    
+    collection_name = "legal_documents"
+    input_path = r"input/the-state-of-ai-how-organizations-are-rewiring-to-capture-value_final.pdf"
+    index_chunks_to_qdrant(input_path, collection_name)
     print("Indexing to Qdrant completed.")

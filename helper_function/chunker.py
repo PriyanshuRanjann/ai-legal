@@ -78,7 +78,7 @@ def add_context_to_chunk_records(chunks: List[Dict]) -> None:
         chunk["context_next"] = chunks[i + 1]["text"] if i < len(chunks) - 1 else ""
 
 def process_parsed_pdfs_with_context_chunking(
-    input,
+    input_path,
     input_dir: str = INPUT_DIR,
     output_dir: str = OUTPUT_DIR
 ) -> None:
@@ -96,10 +96,10 @@ def process_parsed_pdfs_with_context_chunking(
         output_buffers: Dict[str, List[Dict]] = {}
 
         for file_name in files:
-            input_path = os.path.join(input_dir, file_name)
+            traj = os.path.join(input_dir, file_name)
 
             try:
-                data = read_parsed_json(input_path, input)
+                data = read_parsed_json(traj, input_path)
                 if not data:
                     continue
 
@@ -175,5 +175,5 @@ def process_parsed_pdfs_with_context_chunking(
         print(f"Chunking pipeline failed: {e}")
 
 if __name__ == "__main__":
-    input = r"input/the-state-of-ai-how-organizations-are-rewiring-to-capture-value_final.pdf"
-    process_parsed_pdfs_with_context_chunking(input)
+    input_path = r"input/the-state-of-ai-how-organizations-are-rewiring-to-capture-value_final.pdf"
+    process_parsed_pdfs_with_context_chunking(input_path)
