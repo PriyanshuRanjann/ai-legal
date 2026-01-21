@@ -1,2 +1,8 @@
 PyMuPDF >= 1.26.7
 pydantic >= 2.12.5
+sentence-transformers >= 5.2.0
+ollama >= 0.6.1
+uvicorn >= 0.40.0
+qdrant-client >= 1.16.2
+uuid >= 1.30
+python-dotenv >= 1.2.1
