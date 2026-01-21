@@ -9,10 +9,9 @@ from fastapi import APIRouter, File, UploadFile, HTTPException, Query
 from qdrant_client import QdrantClient
 
 from helper_function.schemas import (
-    QueryRequest, QueryResponse, PassageResult,
-    IngestRequest, IngestResponse, 
+    QueryRequest, QueryResponse, PassageResult, IngestResponse, 
     DocumentListResponse, DocumentInfo,
-    DocumentStats, ErrorResponse, FilterParams
+    DocumentStats
 )
 from helper_function.llm import ollama_rag
 from helper_function.qdrant_client import initialize_qdrant_client, index_chunks_to_qdrant
