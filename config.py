@@ -18,8 +18,19 @@ if not INPUT_DIR.exists():
     INPUT_DIR.mkdir(parents=True, exist_ok=True)
 if not OUTPUT_DIR.exists():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+# Ollama configuration
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434/api/generate")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "phi:latest")
-MODEL_NAME = os.environ.get("MODEL_NAME", "gpt-4o-mini")
+
+# Qdrant configuration
+QDRANT_HOST = os.environ.get("QDRANT_HOST", "localhost")
+QDRANT_PORT = int(os.environ.get("QDRANT_PORT", "6333"))
+
+# LLM configuration
 TEMPERATURE = float(os.environ.get("TEMPERATURE", "0"))
 MAX_TOKENS = int(os.environ.get("MAX_TOKENS", "4000"))
+
+# API configuration
+API_HOST = os.environ.get("API_HOST", "0.0.0.0")
+API_PORT = int(os.environ.get("API_PORT", "8000"))
