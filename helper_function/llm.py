@@ -343,7 +343,6 @@ def ollama_rag_streaming(
 
     except Exception as e:
         print(f"Chatbot failed to initialize: {e}")
-refactor: enhance search_qdrant function with improved logging and error handling
 
 if __name__ == "__main__":
     # Example usage - streaming chatbot
