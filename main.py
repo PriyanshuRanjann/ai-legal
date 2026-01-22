@@ -7,7 +7,7 @@ from datetime import datetime
 import logging
 
 from api.endpoints import router
-from api.schemas import ErrorResponse
+from helper_function.schemas import ErrorResponse
 
 # Configure logging
 logging.basicConfig(
