@@ -17,13 +17,19 @@ def parse_pdf(path: str | Path, document_id: str | None = None) -> List[PDFPageS
 
     try:
         with fitz.open(pdf_path) as doc:
+            total_pages = len(doc)
+            print(f"[INFO] Parsing PDF: {pdf_path.name} with {total_pages} pages")
+            
             for index, page in enumerate(doc):
                 try:
+                    # Show progress
+                    if (index + 1) % 5 == 0:
+                        print(f"[INFO] Processing page {index + 1}/{total_pages}...")
+                    
                     raw_text = page.get_text("text")
                 except Exception as extraction_error:
-                    raise RuntimeError(
-                        f"Unable to extract text from {pdf_path.name} (page index {index})"
-                    ) from extraction_error
+                    print(f"[WARN] Failed to extract text from page {index}, skipping...")
+                    raw_text = ""
 
                 cleaned = _normalize_text(raw_text)
                 pages.append(
@@ -34,7 +40,10 @@ def parse_pdf(path: str | Path, document_id: str | None = None) -> List[PDFPageS
                         source_path=str(pdf_path),
                     )
                 )
+            
+            print(f"[SUCCESS] Parsed {len(pages)} pages from {pdf_path.name}")
     except Exception as open_error:
+        print(f"[ERROR] Failed to parse PDF {pdf_path}: {open_error}")
         raise RuntimeError(f"Failed to parse PDF {pdf_path}") from open_error
 
     return pages
