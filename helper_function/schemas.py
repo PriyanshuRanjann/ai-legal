@@ -134,3 +134,19 @@ class ErrorResponse(BaseModel):
     details: Optional[Dict[str, Any]] = Field(
         None, description="Additional error details"
     )
+
+
+class DocumentIngestionError(Exception):
+    """Exception raised during document ingestion."""
+
+    def __init__(self, message):
+        super().__init__(message)
+        self.message = message
+
+
+class DocumentQueryError(Exception):
+    """Exception raised during document query."""
+
+    def __init__(self, message):
+        super().__init__(message)
+        self.message = message
