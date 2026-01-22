@@ -14,30 +14,32 @@ def read_parsed_json(path: str, source_pdf: str):
     """Read parsed JSON file and return its content."""
     try:
         if not os.path.exists(path):
-            print(f"[INFO] Parsed JSON not found at {path}, generating from PDF...")
+            print(f"Parsed JSON not found at {path}, generating from PDF...")
             save_pdf_pages_to_json(source_pdf)
-        
+
         if not os.path.exists(path):
             raise FileNotFoundError(f"Parsed JSON not found at {path}")
-        
-        with open(path, 'r', encoding='utf-8') as f:
+
+        with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
-            print(f"[INFO] Loaded parsed JSON: {path}")
+            print(f"Loaded parsed JSON: {path}")
             return data
     except json.JSONDecodeError as e:
-        print(f"[ERROR] Invalid JSON in {path}: {e}")
+        print(f"Invalid JSON in {path}: {e}")
         return None
     except Exception as e:
-        print(f"[ERROR] Failed to read: {path}: {e}")
+        print(f"Failed to read: {path}: {e}")
         return None
+
 
 def write_parsed_json(path: str, data) -> None:
     """Write data to a JSON file."""
     try:
-        with open(path, 'w', encoding='utf-8') as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
     except Exception as e:
         print(f"Failed to write: {path}: {e}")
+
 
 def split_paragraphs(text: str) -> List[str]:
     """
@@ -47,6 +49,7 @@ def split_paragraphs(text: str) -> List[str]:
     if not paragraphs:
         return [text.strip()]
     return paragraphs
+
 
 def build_chunks_from_paragraphs(paragraphs: List[str]) -> List[str]:
     """
@@ -65,7 +68,7 @@ def build_chunks_from_paragraphs(paragraphs: List[str]) -> List[str]:
 
     for para in paragraphs:
         if len(buffer_text) + len(para) <= MAX_CHARS_PER_CHUNK:
-            buffer_text += (" " + para if buffer_text else para)
+            buffer_text += " " + para if buffer_text else para
         else:
             if len(buffer_text) >= MIN_CHARS_PER_CHUNK:
                 chunks.append(buffer_text.strip())
@@ -85,15 +88,16 @@ def add_context_to_chunk_records(chunks: List[Dict]) -> None:
         chunk["context_prev"] = chunks[i - 1]["text"] if i > 0 else ""
         chunk["context_next"] = chunks[i + 1]["text"] if i < len(chunks) - 1 else ""
 
+
 def process_parsed_pdfs_with_context_chunking(
     input_path,
     input_dir: str = INPUT_DIR,
     output_dir: str = OUTPUT_DIR,
-    doc_id_filter: str = None
+    doc_id_filter: str = None,
 ) -> None:
     """
     Main entry point for context-enriched chunking pipeline.
-    
+
     Args:
         input_path: Path to PDF file
         input_dir: Directory with parsed JSON pages
@@ -107,52 +111,53 @@ def process_parsed_pdfs_with_context_chunking(
 
         # Ensure parsed PDFs exist
         if not os.path.exists(input_dir) or not os.listdir(input_dir):
-            print(f"[INFO] Parsed PDF directory empty, parsing PDF first...")
+            print(f"Parsed PDF directory empty, parsing PDF first...")
             save_pdf_pages_to_json(input_path, output_dir=input_dir)
 
         all_files = sorted(f for f in os.listdir(input_dir) if f.endswith(".json"))
-        
+
         if not all_files:
-            print(f"[ERROR] No JSON files found in {input_dir}")
+            print(f"No JSON files found in {input_dir}")
             return
-        
+
         # Filter files by document ID if specified
         if doc_id_filter:
             files = [f for f in all_files if doc_id_filter in f]
-            print(f"[INFO] Filtering to {len(files)} files for document {doc_id_filter} (from {len(all_files)} total)")
+            print(
+                f"Filtering to {len(files)} files for document {doc_id_filter} (from {len(all_files)} total)"
+            )
         else:
             files = all_files
-            print(f"[INFO] Found {len(files)} files to process.")
+            print(f"Found {len(files)} files to process.")
 
         pages_by_doc: Dict[str, List[Dict]] = {}
         output_buffers: Dict[str, List[Dict]] = {}
 
         for file_idx, file_name in enumerate(files):
             traj = os.path.join(input_dir, file_name)
-            print(f"[INFO] Processing file {file_idx + 1}/{len(files)}: {file_name}")
+            print(f"Processing file {file_idx + 1}/{len(files)}: {file_name}")
 
             try:
                 data = read_parsed_json(traj, input_path)
                 if not data:
-                    print(f"[WARN] Skipping {file_name} - no data returned")
+                    print(f"Skipping {file_name} - no data returned")
                     continue
 
                 doc_id = data.get("document_id")
                 if not doc_id:
-                    print(f"[WARN] Missing document_id in {file_name}")
+                    print(f"Missing document_id in {file_name}")
                     continue
 
-                pages_by_doc.setdefault(doc_id, []).append({
-                    "file_name": file_name,
-                    "data": data
-                })
+                pages_by_doc.setdefault(doc_id, []).append(
+                    {"file_name": file_name, "data": data}
+                )
 
             except Exception as file_error:
-                print(f"[ERROR] Failed processing {file_name}: {file_error}")
+                print(f"Failed processing {file_name}: {file_error}")
                 continue
 
-        print(f"[INFO] Processing {len(pages_by_doc)} unique documents...")
-        
+        print(f"Processing {len(pages_by_doc)} unique documents...")
+
         for doc_id, pages in pages_by_doc.items():
             pages.sort(key=lambda p: p["data"].get("page_number", 0))
             doc_chunks: List[Dict] = []
@@ -161,7 +166,7 @@ def process_parsed_pdfs_with_context_chunking(
                 data = page["data"]
                 text = data.get("text", "").strip()
                 if not text:
-                    print(f"[WARN] Empty text in {page['file_name']}")
+                    print(f"Empty text in {page['file_name']}")
                     continue
 
                 paragraphs = split_paragraphs(text)
@@ -180,19 +185,18 @@ def process_parsed_pdfs_with_context_chunking(
                         "text": chunk_text,
                         "context_prev": "",
                         "context_next": "",
-                        "char_count": len(chunk_text)
+                        "char_count": len(chunk_text),
                     }
                     doc_chunks.append(chunk_record)
                     page_chunks.append(chunk_record)
 
             if not doc_chunks:
-                print(f"[WARN] No chunks created for document {doc_id}")
+                print(f"No chunks created for document {doc_id}")
                 continue
 
             add_context_to_chunk_records(doc_chunks)
-            print(f"[INFO] Created {len(doc_chunks)} chunks for document {doc_id}")
-
-        print(f"[INFO] Writing {len(output_buffers)} chunk files...")
+            print(f"Created {len(doc_chunks)} chunks for document {doc_id}")
+        print(f"Writing {len(output_buffers)} chunk files...")
         for file_name, chunks in output_buffers.items():
             try:
                 validated_chunks = [
@@ -201,22 +205,22 @@ def process_parsed_pdfs_with_context_chunking(
                 ]
 
                 output_path = os.path.join(
-                    output_dir,
-                    file_name.replace(".json", "_chunks.json")
+                    output_dir, file_name.replace(".json", "_chunks.json")
                 )
 
                 write_parsed_json(output_path, validated_chunks)
-                print(f"[OK] Processed {file_name} → {len(validated_chunks)} chunks saved to {output_path}")
+                print(
+                    f"Processed {file_name} → {len(validated_chunks)} chunks saved to {output_path}"
+                )
             except Exception as write_error:
-                print(f"[ERROR] Failed to write chunks for {file_name}: {write_error}")
+                print(f"Failed to write chunks for {file_name}: {write_error}")
                 continue
 
-        print("[DONE] Chunking completed successfully.")
+        print("Chunking completed successfully.")
 
     except Exception as e:
-        print(f"[ERROR] Chunking pipeline failed: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"Chunking pipeline failed: {e}")
+
 
 if __name__ == "__main__":
     input_path = r"input/the-state-of-ai-how-organizations-are-rewiring-to-capture-value_final.pdf"
