@@ -18,20 +18,19 @@ def parse_pdf(path: str | Path, document_id: str | None = None) -> List[PDFPageS
     try:
         with fitz.open(pdf_path) as doc:
             total_pages = len(doc)
-            print(f"[INFO] Parsing PDF: {pdf_path.name} with {total_pages} pages")
-            
+
             for index, page in enumerate(doc):
                 try:
                     # Show progress
                     if (index + 1) % 5 == 0:
-                        print(f"[INFO] Processing page {index + 1}/{total_pages}...")
-                    
+                        print(f"Processing page {index + 1}/{total_pages}...")
+
                     raw_text = page.get_text("text")
                 except Exception as extraction_error:
-                    print(f"[WARN] Failed to extract text from page {index}, skipping...")
+                    print(f"Failed to extract text from page {index}, skipping...")
                     raw_text = ""
 
-                cleaned = _normalize_text(raw_text)
+                cleaned = normalize_text(raw_text)
                 pages.append(
                     PDFPageSchema(
                         document_id=doc_id,
@@ -40,38 +39,47 @@ def parse_pdf(path: str | Path, document_id: str | None = None) -> List[PDFPageS
                         source_path=str(pdf_path),
                     )
                 )
-            
-            print(f"[SUCCESS] Parsed {len(pages)} pages from {pdf_path.name}")
+
+            print(f"Parsed {len(pages)} pages from {pdf_path.name}")
     except Exception as open_error:
-        print(f"[ERROR] Failed to parse PDF {pdf_path}: {open_error}")
+        print(f"Failed to parse PDF {pdf_path}: {open_error}")
         raise RuntimeError(f"Failed to parse PDF {pdf_path}") from open_error
 
     return pages
 
 
-def _normalize_text(raw_text: str | None) -> str:
-    if not raw_text:
+def normalize_text(raw_text: str | None) -> str:
+    """Clean and normalize extracted text."""
+    try:
+        if not raw_text:
+            return ""
+        text = raw_text.replace("\r\n", "\n").replace("\r", "\n")
+        text = " ".join(part for part in text.split() if part)
+        return text.strip()
+    except Exception as e:
+        print(f"Text normalization error: {e}")
         return ""
-
-    text = raw_text.replace("\r\n", "\n").replace("\r", "\n")
-    text = " ".join(part for part in text.split() if part)
-    return text.strip()
 
 
 def save_pdf_pages_to_json(
     pdf_path: str | Path, output_dir: str | Path = "output/parsed_pdf"
 ) -> None:
     """Parse PDF and save each page as a JSON file in output_dir."""
-    pages = parse_pdf(pdf_path)
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    for page in pages:
-        output_path = output_dir / f"{page.document_id}_page_{page.page_number}.json"
-        with output_path.open("w", encoding="utf-8") as f:
-            json.dump(page.model_dump(), f, ensure_ascii=False, indent=4)
-        print(
-            f"Saved page {page.page_number} ({page.char_count} chars) to {output_path}"
-        )
+    try:
+        pages = parse_pdf(pdf_path)
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        for page in pages:
+            output_path = (
+                output_dir / f"{page.document_id}_page_{page.page_number}.json"
+            )
+            with output_path.open("w", encoding="utf-8") as f:
+                json.dump(page.model_dump(), f, ensure_ascii=False, indent=4)
+            print(
+                f"Saved page {page.page_number} ({page.char_count} chars) to {output_path}"
+            )
+    except Exception as e:
+        print(f"Failed to save PDF pages to JSON: {e}")
 
 
 if __name__ == "__main__":
