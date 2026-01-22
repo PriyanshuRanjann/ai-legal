@@ -69,29 +69,58 @@ def upsert_points(
     except Exception as e:
         print(f"[ERROR] Failed to upsert points into {collection_name}: {e}")
 
-def index_chunks_to_qdrant(input_path,collection_name: str,qdrant_host: str = "localhost",qdrant_port: int = 6333) -> None:
-    """Full pipeline: generate embeddings, and index into Qdrant."""
+def index_chunks_to_qdrant(input_path, collection_name: str, document_id: str = None, qdrant_host: str = "localhost", qdrant_port: int = 6333) -> bool:
+    """Full pipeline: generate embeddings, and index into Qdrant.
+    
+    Args:
+        input_path: Path to PDF file
+        collection_name: Name of Qdrant collection
+        document_id: Document ID to filter chunks (speeds up processing)
+        qdrant_host: Qdrant host
+        qdrant_port: Qdrant port
+        
+    Returns:
+        bool: True if indexing succeeded, False otherwise
+    """
     try:
+        print(f"[INFO] Initializing Qdrant client at {qdrant_host}:{qdrant_port}...")
         client = initialize_qdrant_client(host=qdrant_host, port=qdrant_port)
         if not client:
-            return 
+            print("[ERROR] Failed to initialize Qdrant client")
+            return False
 
+        print(f"[INFO] Creating or verifying collection: {collection_name}")
         create_qdrant_collection(client, collection_name)
 
-        records = process_chunks_for_embedding(input_path)
+        print(f"[INFO] Starting embedding generation for document (document_id={document_id})...")
+        records = process_chunks_for_embedding(input_path, document_id=document_id)
+        
         if not records:
             print("[ERROR] No embedding records to index.")
-            return
+            return False
+        
+        print(f"[INFO] Generated {len(records)} embedding records")
 
+        print(f"[INFO] Formatting {len(records)} records for Qdrant...")
         points = format_points(records)
+        
         if not points:
             print("[ERROR] No points formatted for Qdrant.")
-            return
+            return False
+        
+        print(f"[INFO] Formatted {len(points)} points successfully")
 
+        print(f"[INFO] Upserting {len(points)} points to Qdrant collection {collection_name}...")
         upsert_points(client, collection_name, points)
+        
+        print(f"[SUCCESS] Successfully indexed {len(points)} points to Qdrant collection '{collection_name}'")
+        return True
 
     except Exception as e:
         print(f"[ERROR] Exception during indexing to Qdrant: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
 
 if __name__ == "__main__":
     

@@ -9,7 +9,7 @@ env_path = Path.cwd() / ".env"  # Adjust the path
 if env_path.exists():
     load_dotenv(env_path, override=True)
 
-PROJECT_ROOT = os.environ.get("PROJECT_ROOT", Path.cwd())
+PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", Path.cwd()))
 
 INPUT_DIR = PROJECT_ROOT / "input"
 OUTPUT_DIR = PROJECT_ROOT / "output"

@@ -163,11 +163,24 @@ def ollama_rag(
             return "No relevant documents found for your query."
         
         # Very minimal prompt to reduce token processing
-        prompt = f"""Answer using ONLY this context. Be brief.
+        prompt = f"""
+        ROLE: You are a legal professional specialized in retrieving and citing legal document passages.
+        TASK: Answer using ONLY this context. Be brief.
+        - Return relevant passages with:
+            - Exact text passage
+            - Page number(s) where the passage appears
+            - Number of instances found
+            - Confidence score (higher means more relevant)
 
-CONTEXT: {context}
+        CONTEXT: {context}
+        QUERY: {query}
 
-QUERY: {query}
+        RULES:
+        - Cite exact page number(s) for every passage.
+        - If none found, reply: "No relevant passages found."
+        - Never fabricate passages or page numbers.
+        - If page range given, search only those pages
+        - Respond in a clear, structured format.
 
 ANSWER:"""
         
@@ -187,8 +200,8 @@ ANSWER:"""
                     prompt=prompt,
                     stream=False,
                     options={
-                        "num_predict": 200,  # Limit output tokens
-                        "num_ctx": 1024,  # Limit context window
+                        "num_predict": 200,  
+                        "num_ctx": 1024,  
                     }
                 )
                 
@@ -211,16 +224,136 @@ ANSWER:"""
             
     except Exception as e:
         print(f"[ERROR] RAG pipeline failed: {e}")
-        import traceback
-        traceback.print_exc()
         return "Error occurred during RAG processing."
 
 
+def ollama_rag_streaming(
+    input_path,
+    collection_name,
+    top_k=2,
+    qdrant_host="localhost",
+    qdrant_port=6333,
+    ollama_host="http://localhost:11434",
+    skip_indexing=False,
+):
+    """
+    Streaming chatbot RAG pipeline: Run until user says exit/bye/quit/etc.
+    Streams responses token-by-token for real-time chatbot experience.
+    
+    Args:
+        input_path: Path to input PDF
+        collection_name: Name of Qdrant collection
+        top_k: Number of top results to retrieve
+        qdrant_host: Qdrant host
+        qdrant_port: Qdrant port
+        ollama_host: Ollama server URL
+        skip_indexing: If True, skip re-indexing on first query
+    """
+    exit_keywords = {"exit", "bye", "quit", "q", "leave", "stop", "end"}
+    
+    try:
+        client = initialize_qdrant_client(host=qdrant_host, port=qdrant_port)
+        first_query = True
+        
+        print("\n" + "="*60)
+        print("RAG CHATBOT - Ask questions about your documents")
+        print("Type 'exit', 'bye', or 'quit' to end conversation")
+        print("="*60 + "\n")
+        
+        while True:
+            try:
+                query = input("You: ").strip()
+                
+                # Check exit conditions
+                if query.lower() in exit_keywords:
+                    print("\nBot: Goodbye!")
+                    break
+                
+                if not query:
+                    print("Bot: Please enter a question.\n")
+                    continue
+                
+                print("\nBot: ", end="", flush=True)
+                
+                # Retrieve context from Qdrant
+                results = search_qdrant(
+                    input_path, 
+                    query, 
+                    client, 
+                    collection_name, 
+                    top_k, 
+                    skip_indexing=(not first_query or skip_indexing),
+                    prefer_early_pages=True
+                )
+                first_query = False
+                
+                context = build_context(results, max_tokens=600)
+                
+                if not context or len(context.strip()) == 0:
+                    print("No relevant documents found for your query.\n")
+                    continue
+                
+                # Build prompt
+                prompt = f"""
+                        ROLE: You are a legal professional specialized in retrieving and citing legal document passages.
+                        TASK: Answer using ONLY this context. Be brief.
+                        - Return relevant passages with:
+                            - Exact text passage
+                            - Page number(s) where the passage appears
+                            - Number of instances found
+                            - Confidence score (higher means more relevant)
+
+                        CONTEXT: {context}
+                        QUERY: {query}
+
+                        RULES:
+                        - Cite exact page number(s) for every passage.
+                        - If none found, reply: "No relevant passages found."
+                        - Never fabricate passages or page numbers.
+                        - If page range given, search only those pages
+                        - Respond in a clear, structured format.
+"""
+                
+                # Stream response from Ollama
+                ollama_client = Client(host=ollama_host)
+                
+                full_response = ""
+                try:
+                    response_stream = ollama_client.generate(
+                        model=OLLAMA_MODEL,
+                        prompt=prompt,
+                        stream=True,
+                        options={
+                            "num_predict": 200,
+                            "num_ctx": 1024,
+                        }
+                    )
+                    
+                    # Stream tokens in real-time
+                    for chunk in response_stream:
+                        token = chunk.get("response", "")
+                        if token:
+                            print(token, end="", flush=True)
+                            full_response += token
+                    
+                    print("\n")  # New line after response
+                    
+                except Exception as stream_error:
+                    print(f"Error during streaming: {stream_error}")
+                    print(f"Fallback: {context[:300]}...\n")
+                    
+            except KeyboardInterrupt:
+                print("\n\nBot: Conversation interrupted. Goodbye!")
+                break
+            except Exception as e:
+                print(f"\nError processing query: {e}")
+                print("Please try again.\n")
+                
+    except Exception as e:
+        print(f"[ERROR] Chatbot failed to initialize: {e}")
+
 if __name__ == "__main__":
-    # Example usage
+    # Example usage - streaming chatbot
     input_path = r"input/the-state-of-ai-how-organizations-are-rewiring-to-capture-value_final.pdf"
-    query = input("Enter your legal query: ")
     collection_name = "legal_example1"
-    answer = ollama_rag(input_path, query, collection_name)
-    print("Answer from Ollama RAG:")
-    print(answer)
+    ollama_rag_streaming(input_path, collection_name)
