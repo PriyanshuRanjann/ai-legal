@@ -187,8 +187,8 @@ def _process_document_pipeline(
 
         return chunks, total_pages, len(chunks)
 
-    except DocumentIngestionError:
-        raise
+    except DocumentIngestionError as e:
+        raise e
     except Exception as e:
         raise DocumentIngestionError(f"Pipeline execution failed: {str(e)}")
 
