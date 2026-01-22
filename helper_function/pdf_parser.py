@@ -1,8 +1,8 @@
-from pathlib import Path
-from typing import List, Sequence
-from .schemas import PDFPageSchema
 import fitz
 import json
+from pathlib import Path
+from typing import List
+from .schemas import PDFPageSchema
 from pydantic import BaseModel, Field, validator
 
 
