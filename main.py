@@ -5,14 +5,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from datetime import datetime
 import logging
-
+import uvicorn
 from api.endpoints import router
 from helper_function.schemas import ErrorResponse
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -22,7 +21,7 @@ app = FastAPI(
     description="Retrieval-Augmented Generation API for legal documents with Qdrant vector database",
     version="1.0.0",
     docs_url="/api/docs",
-    openapi_url="/api/openapi.json"
+    openapi_url="/api/openapi.json",
 )
 
 # Add CORS middleware
@@ -49,8 +48,8 @@ async def global_exception_handler(request: Request, exc: Exception):
             error=str(exc),
             status_code=500,
             timestamp=datetime.now().isoformat(),
-            details={"path": str(request.url)}
-        ).dict()
+            details={"path": str(request.url)},
+        ).dict(),
     )
 
 
@@ -60,7 +59,7 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "Legal Document RAG",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
     }
 
 
@@ -76,17 +75,10 @@ async def root():
             "ingest": "POST /api/ingest",
             "query": "POST /api/query",
             "list_documents": "GET /api/documents",
-            "document_stats": "GET /api/documents/{doc_id}/stats"
-        }
+            "document_stats": "GET /api/documents/{doc_id}/stats",
+        },
     }
 
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
-    )
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, log_level="info")
