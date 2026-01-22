@@ -1,5 +1,6 @@
 import os
 import json
+from sentence_transformers import SentenceTransformer
 from helper_function.chunker import process_parsed_pdfs_with_context_chunking
 
 
@@ -94,7 +95,6 @@ def load_embedding_model(model_name: str = "sentence-transformers/all-mpnet-base
     """Loads and returns the embedding model."""
     try:
         # Lazy import to avoid TensorFlow issues
-        from sentence_transformers import SentenceTransformer
         model = SentenceTransformer(model_name)
         print(f"[INFO] Loaded embedding model: {model_name}")
         return model
