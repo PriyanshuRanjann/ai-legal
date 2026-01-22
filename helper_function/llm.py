@@ -224,8 +224,6 @@ ANSWER:"""
             
     except Exception as e:
         print(f"[ERROR] RAG pipeline failed: {e}")
-        import traceback
-        traceback.print_exc()
         return "Error occurred during RAG processing."
 
 
@@ -353,9 +351,6 @@ def ollama_rag_streaming(
                 
     except Exception as e:
         print(f"[ERROR] Chatbot failed to initialize: {e}")
-        import traceback
-        traceback.print_exc()
-
 
 if __name__ == "__main__":
     # Example usage - streaming chatbot
